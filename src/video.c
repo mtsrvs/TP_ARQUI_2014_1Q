@@ -154,17 +154,18 @@ void video_update_mouse(byte mouse_x, byte mouse_y){
   int delta_x = 0;
   int delta_y = 0;
 
+int aux_X, aux_Y;
 
-    if(mouse_x == 0xFF){
+    if(mouse_x > 0x80){ //1000 0000 = 0x80
       delta_x = -1;
-    }else if(mouse_x == 1){
+    }else if(mouse_x < 0x80 && mouse_x != 0){
       delta_x = 1;
     }    
 
 
-    if(mouse_y == 0xFF){
+    if(mouse_y > 0x80){
       delta_y = 1;
-    }else if(mouse_y == 1){
+    }else if(mouse_y < 0x80 && mouse_y != 0){
       delta_y = -1;
     }
 

@@ -60,6 +60,9 @@ void set_time(){
   hex_sec = tohex(new_seconds);
 
   rtc_hand_write(hex_hour, hex_min, hex_sec);
+
+  printf("time configurated\n");
+
 }
 
 void help(){
