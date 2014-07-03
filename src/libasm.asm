@@ -1,17 +1,11 @@
 GLOBAL  _read_msw,_lidt
 GLOBAL  _int_08_hand, _int_09_hand
 GLOBAL  _mascaraPIC1,_mascaraPIC2,_Cli,_Sti
-GLOBAL  _debug, _rtc_hand
+GLOBAL  _debug
+GLOBAL  _update_cursor_position
 
 EXTERN  int_08
 EXTERN  keyboard_handler
-
-EXTERN  hour
-EXTERN  minute
-EXTERN  seconds
-EXTERN  dayofmonth
-EXTERN  month
-EXTERN  year
 
 SECTION .text
 
@@ -92,93 +86,27 @@ _int_09_hand:       ; INT 9 Handler (Keyboard)
     iret
 
 ;*********************************************************************
-_rtc_hand:          ;RTC Handler
-    push    ds
-    push    es                      
-    pusha
+;* source: http://wiki.osdev.org/Text_Mode_Cursor
+;*
+
+_update_cursor_position:
+    push    ebp
+    mov     ebp, esp
+    push    edx
+    push    eax                      
     
-    mov al, 0x00    ;seconds
-    out 0x70, al
-    in al, 0x71
-    mov [seconds], al
+    mov dx, word[ebp+8] ;VGA port
+    mov al, [ebp+12] ;value
+    out dx,al  
 
-    mov al, 0x02    ;minutes
-    out 0x70, al
-    in al, 0x71
-    mov [minute], al
-
-    mov al, 0x04    ;hours
-    out 0x70, al
-    in al, 0x71
-    mov [hour], al
-
-    mov al, 0x07    ;dayofmonth
-    out 0x70, al
-    in al, 0x71
-    mov [dayofmonth], al
-
-    mov al, 0x08    ;month
-    out 0x70, al
-    in al, 0x71
-    mov [month], al
-
-    mov al, 0x09    ;year
-    out 0x70, al
-    in al, 0x71
-    mov [year], al
-
-    ; End
-    mov al,20h      ; Envio de EOI generico al PIC
-    out 20h,al
-    popa                            
-    pop     es
-    pop     ds
+    pop     eax
+    pop     edx
+    mov esp, ebp
+    pop ebp
     ret
 
-;*********************************************************************
-_mouse_hand:          ;mouse Handler
-    push    ds
-    push    es                      
-    pusha
-    
-    in ax, 0x71
-    mov [seconds], al
-
-    mov al, 0x02    ;minutes
-    out 0x70, al
-    in al, 0x71
-    mov [minute], al
-
-    mov al, 0x04    ;hours
-    out 0x70, al
-    in al, 0x71
-    mov [hour], al
-
-    mov al, 0x07    ;dayofmonth
-    out 0x70, al
-    in al, 0x71
-    mov [dayofmonth], al
-
-    mov al, 0x08    ;month
-    out 0x70, al
-    in al, 0x71
-    mov [month], al
-
-    mov al, 0x09    ;year
-    out 0x70, al
-    in al, 0x71
-    mov [year], al
-
-    ; End
-    mov al,20h      ; Envio de EOI generico al PIC
-    out 20h,al
-    popa                            
-    pop     es
-    pop     ds
-    ret
-;*********************************************************************
-
-; Debug para el BOCHS, detiene la ejecució; Para continuar colocar en el BOCHSDBG: set $eax=0
+;**********************************************************************
+;Debug para el BOCHS, detiene la ejecució; Para continuar colocar en el BOCHSDBG: set $eax=0
 ;
 
 

@@ -3,10 +3,12 @@
 #include "../include/video.h"
 
 char *video = (char *) 0xb8000;
-char prev_screen[2000];
+char prev_screen[2000] = {0};
 int prev_line_offset;
 int prev_char_offset;
 int pos = 0;
+int mouse_pos_x = 39;
+int mouse_pos_y = 12;
 
 Screen screen;
 
@@ -73,19 +75,13 @@ void clean_screen()
       video_set(char_pos, line, ' ');
     }
   }
+  restart_screen_offsets();
 }
 
-void paint_screen(char color){
+void paint_screen(byte color){
   screen.current_txt_background_color = color;
   clean_screen();
 }
-
-// void video_move_type_cursor(int fd)
-// {
-//   ScreenSegment* ss = &screen_segment_table[fd];
-//   // TODO: move this magic number to a constant
-//   set_cursor((10 + ss->line_offset) * ss->char_offset_limit + ss->char_offset);
-// }
 
 void _video_new_line()
 {
@@ -99,14 +95,40 @@ void _video_new_line()
   }
 }
 
-// void video_write_new_line(int fd)
-// {
-//   _video_new_line(fd);
-//   video_move_type_cursor(fd);
-// }
+/*
+ * source: http://wiki.osdev.org/Text_Mode_Cursor
+ * 
+ * Set cursor position (text mode 80x25)
+ * 0x3D4: VGA port
+ * 0x3D5: VGA port 
+ *
+ */ 
+ void update_cursor(int row, int col)
+ {
+    unsigned short position=(row*80) + col;
+    // cursor LOW port to vga INDEX register
+    _update_cursor_position(0x3D4, 0x0F);
+    _update_cursor_position(0x3D5, (unsigned char)(position&0xFF));
+    // cursor HIGH port to vga INDEX register
+    _update_cursor_position(0x3D4, 0x0E);
+    _update_cursor_position(0x3D5, (unsigned char )((position>>8)&0xFF));
+
+    return;
+ }
+
+/*
+ * Idea of how to hide cursor taken from 
+ * http://forum.osdev.org/viewtopic.php?f=1&t=15669&start=0
+ */
+void hide_cursor(){
+  update_cursor(0xFF, 0xFF);
+  return;
+}
 
 void video_write(char ascii){
   video_set(screen.char_offset, screen.line_offset, ascii);
+  update_cursor(screen.line_offset, screen.char_offset + 1);
+
   /*
    * We increment one positions since we only
    * count logic characters, not bytes on screen.
@@ -118,7 +140,42 @@ void video_write(char ascii){
     _video_new_line();
   }
 
-  //video_move_type_cursor(fd);
+}
+
+ void _video_erase_mouse(int mouse_pos_x, int mouse_pos_y){
+  video[2*(mouse_pos_y*80 + mouse_pos_x) + 1] = WHITE_TXT;
+ }
+
+ void _video_write_mouse(int mouse_pos_x, int mouse_pos_y, int color){
+  video[2*(mouse_pos_y*80 + mouse_pos_x) + 1] = color;
+ }
+
+void video_update_mouse(byte mouse_x, byte mouse_y){
+  int delta_x = 0;
+  int delta_y = 0;
+
+
+    if(mouse_x == 0xFF){
+      delta_x = -1;
+    }else if(mouse_x == 1){
+      delta_x = 1;
+    }    
+
+
+    if(mouse_y == 0xFF){
+      delta_y = 1;
+    }else if(mouse_y == 1){
+      delta_y = -1;
+    }
+
+  _video_erase_mouse(mouse_pos_x, mouse_pos_y);
+  if((mouse_pos_x + delta_x) >= 0 && (mouse_pos_x + delta_x) <= 79){
+      mouse_pos_x += delta_x;    
+  }
+  if((mouse_pos_y + delta_y) >= 0 && (mouse_pos_y + delta_y) <= 24){
+      mouse_pos_y += delta_y;
+  }
+  _video_write_mouse(mouse_pos_x, mouse_pos_y, 0x38);
 }
 
 /*
@@ -131,7 +188,7 @@ void video_erase_write()
   {
     screen.char_offset--;
     video_set(screen.char_offset, screen.line_offset, ' ');
-    //video_move_type_cursor(fd);
+    update_cursor(screen.line_offset, screen.char_offset);
   }
 }
 
@@ -170,4 +227,6 @@ void restore_screen(){
 
   screen.line_offset = prev_line_offset;
   screen.char_offset = prev_char_offset;
+  update_cursor(screen.line_offset, screen.char_offset + 1);
+  return;
 }

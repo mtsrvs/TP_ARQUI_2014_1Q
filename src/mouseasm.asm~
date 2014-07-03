@@ -1,0 +1,46 @@
+GLOBAL _mouse_hand
+GLOBAL inportb, outportb
+
+EXTERN mouse_handler
+
+SECTION .text
+
+inportb:
+  push    ebp
+  mov     ebp, esp
+  xor dx, dx
+  xor ax, ax
+  mov dx, word[ebp + 8]
+  in  ax, dx   ;ax: return value 
+  mov esp, ebp
+  pop ebp
+  ret
+
+outportb:
+  push    ebp
+  mov     ebp, esp
+  xor dx, dx
+  xor ax, ax
+  mov ax, word[ebp + 12]
+  mov dx, word[ebp + 8]
+  out dx, ax  
+  mov esp, ebp
+  pop ebp
+  ret
+
+_mouse_hand:
+    push    ds
+    push    es                      
+    pusha  
+
+    call mouse_handler
+
+    mov al,20h      ; Envio de EOI generico al PIC
+    out 0a0h, al ; send EOI to PIC2
+    out 20h, al ; send EOI to PIC1
+    popa                            
+    pop     es
+    pop     ds
+    iret
+
+

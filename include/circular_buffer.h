@@ -34,4 +34,6 @@ void cbRead(CircularBuffer *cb, char *elem);
 
 extern CircularBuffer cb;
 
+extern CircularBuffer keyboard_buffer;
+
 #endif

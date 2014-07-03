@@ -26,7 +26,7 @@ typedef enum eUSER {U_KERNEL=0, U_NORMAL} tUSERS;
 * - Cantidad
 *
 **/
-size_t __write(int fd, const void* buffer, size_t count);
+size_t __write(int fd, const char* buffer, size_t count);
 
 /* __read
 *

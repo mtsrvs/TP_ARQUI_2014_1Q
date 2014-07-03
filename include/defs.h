@@ -7,6 +7,7 @@
 #define _defs_
 
 #define byte unsigned char
+#define sbyte signed char //mouse.c
 #define word short int
 #define dword int
 

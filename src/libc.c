@@ -12,6 +12,8 @@
 
 unsigned char aBuffer[32];
 
+byte hex1[10] ={0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+byte hex2[6] ={0x00, 0x10, 0x20, 0x30, 0x40, 0x50};
 
 /*
  * Source: https://android.googlesource.com/kernel/lk/+/qcom-dima-8x74-fixes/lib/libc/itoa.c
@@ -128,7 +130,7 @@ char getc(int fd)
   // ToDo: Should return int
 
   char c;
-  while(_read(fd, &c, 1) == 0); // Keep on reading from kernel keyboardBuffer
+  while(__read(fd, &c, 1) == 0); // Keep on reading from kernel keyboardBuffer
                                 // until we have read 1 value.
   return c;
 }
@@ -245,9 +247,12 @@ int putc(int ch, int fd){
    _write_new_line(fd);
     return 0;
   }
+  else if(ch == '\b'){
+  	_write_delete_char(fd);
+  }
   else
   {
-    _write(fd, &ch, 1);
+    __write(fd, &ch, 1);
     return ch;
   }
 }
@@ -267,18 +272,28 @@ int isSpace(char ch)
 	return ch == ' ' || ch == '\n' || ch == '\t';
 }
 
+int isBackspace(char ch)
+{
+	return ch == '\b';
+}
+
 void scanfDecimal(int *pint)
 {
   char ch;
   int decimal;
 
   ch = getChar();
-  putchar(ch);
-  while(!isSpace(ch) && isNumber(ch)){
-    decimal = ch-'0';
-    (*pint)= (*pint)*10+decimal;
-    ch = getChar();
-    putchar(ch);
+ // putchar(ch);
+  while(!isSpace(ch) && isNumber(ch) || isBackspace(ch)){
+  	putchar(ch);
+  	if(!isBackspace(ch)){
+	    decimal = ch-'0';
+	    (*pint)= (*pint)*10+decimal;		
+  	}else{
+  		(*pint) = (*pint)/10;
+  	}
+	ch = getChar(); 
+//    putchar(ch);
   }
 }
 
@@ -306,13 +321,14 @@ void scanfhexa(int *pint)
 	char ch;
 
 	ch = getChar();
-	putchar(ch);
+//	putchar(ch);
 	while(!isSpace(ch) && isHexa(ch))
-	{
+	{	
+		putchar(ch);
 		hex = hexToDecimal(ch);
 		*pint = (*pint)*16 + hex;
-		ch = getChar();
-		putchar(ch);
+    	ch = getChar();
+//		putchar(ch);
 	}
 }
 
@@ -351,11 +367,18 @@ int scanf(const char *fmt, ...)
 			if(fmt[i] == '%'){
 				i++;
 				ch = getChar();
-				putchar(ch);
-
+				if( ch != '\b')
+				{
+					putchar(ch);
+					//printf("-borrar-");
+				}
+					
 				switch(fmt[i])
 				 {
+
 				    case 'd':  
+				    	//printf("-swtch-");
+
 						pint=va_arg(ap, int *);
 						if(isNumber(ch)){
 							(*pint)=ch-'0';
@@ -365,6 +388,8 @@ int scanf(const char *fmt, ...)
 						cant++;
 						break;
 				    case 's':
+				    	//printf("-swtch2-");
+
 						pchar=va_arg(ap,char *);
 						scanfchar(pchar);
 						i++;
@@ -381,8 +406,9 @@ int scanf(const char *fmt, ...)
 						break;					 						
 				  }	
 			}else{
-						printf("%c",fmt[i]);
- 						i++;
+				printf("%c",fmt[i]);							
+				i++;
+
 			}
 		}
 		va_end(ap);
@@ -401,6 +427,21 @@ int strcmp (const char * s1, const char * s2)
   return *s1 < *s2 ? -1 : 1;
 }
 
+/*
+ * Convert a decimal value to hexadecimal value 
+ * this way: 7 = 0x07, 10 = 0x10 or 23 = 0x23 
+ */
+byte tohex(int value){
+  int aux;
+  byte res;
+  
+  aux = value%10;
+  res = hex1[aux];  
+  aux = value/10;
+  res += hex2[aux];
+
+  return res;
+}
 /***************************************************************
 *setup_IDT_entry
 * Inicializa un descriptor de la IDT

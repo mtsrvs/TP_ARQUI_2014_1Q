@@ -5,7 +5,7 @@
  * Source: http://en.wikipedia.org/wiki/Circular_buffer
 */
 
-char cbuff[CB_SIZE];
+char cbuff[CB_SIZE] = {0};
 
 void cbInit(CircularBuffer *cb) {
     cb->size  = CB_SIZE; /* include empty elem */
@@ -34,3 +34,4 @@ void cbRead(CircularBuffer *cb, char *elem) {
     *elem = cb->elems[cb->start];
     cb->start = (cb->start + 1) % cb->size;
 }
+
